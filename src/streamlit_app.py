@@ -2,7 +2,8 @@ import streamlit as st
 
 from functions.get_task_data import get_task_data
 from functions.get_unit_data import get_unit_data
-from functions.add_spike_rates import add_spike_rates
+from functions.get_spike_rates import get_spike_rates
+
 
 
 def streamlit_app():
@@ -14,50 +15,61 @@ def streamlit_app():
 
     task_file = st.file_uploader("Upload Task File:")
     unit_files = st.file_uploader("Upload Unit File:", accept_multiple_files=True)
+    
+    st.subheader("Baseline Settings")
+    baseline_event_name = st.text_input("Event Name:", value='rings_on_time')
+    baseline_frame_start = float(st.text_input("Frame Start (s):", value='-0.2'))
+    baseline_frame_end = float(st.text_input("Frame End (s):", value='0.0'))
+
+    st.write("")
+    
+    st.subheader("Response Settings")
+    response_event_name = st.text_input("Event Name:", value='gabors_on_time')
+    response_frame_start = float(st.text_input("Frame Start (s):", value='0.0'))
+    response_frame_end = float(st.text_input("Frame End (s):", value='0.2'))
 
     st.write("")
 
-    event_name = st.text_input("Event Name:", value='gabors_on_time')
-    frame_start = float(st.text_input("Frame Start (s):", value='0.0'))
-    frame_end = float(st.text_input("Frame End (s):", value='0.2'))
+    if task_file and unit_files:
+        st.write("")
 
-    st.write("")
-
-    if st.button("Compile Units"):
-        if st.session_state.task_data is None:
-            task_data = get_task_data(task_file)
-            st.session_state.task_data = task_data
-        task_data = st.session_state.task_data
-
-        for unit_file in unit_files:
-            unit_data = get_unit_data(unit_file)
-
-            data = {
-                'task_data': task_data,
-                'event_name': event_name,
-                'unit_data': unit_data,
-                'frame_start': frame_start,
-                'frame_end': frame_end
-            }
-
-            task_data = add_spike_rates(data)
-            st.session_state.task_data = task_data
-
-    task_data = st.session_state.task_data
-
-    if task_data is not None:
+        task_data = get_task_data(task_file)
         st.write(task_data)
 
-        date = task_data['Date'].iloc[0]
-        experiment = task_data['Experiment'].iloc[0]
-        file_name = f'{date}_{experiment}_full'
+        st.write("")
 
-        st.download_button(
-            label="Download Data",
-            data=task_data.to_csv(index=False).encode('utf-8'),
-            file_name=f'{file_name}.csv',
-            mime='text/csv',
-        )
+        if st.button("Compile Units"):
+            for unit_file in unit_files:
+                unit_data = get_unit_data(unit_file)
+
+                data = {
+                    'task_data': task_data,
+                    'unit_data': unit_data,
+                    'baseline_event_name': baseline_event_name,
+                    'baseline_frame_start': baseline_frame_start,
+                    'baseline_frame_end': baseline_frame_end,
+                    'response_event_name': response_event_name,
+                    'response_frame_start': response_frame_start,
+                    'response_frame_end': response_frame_end,
+                }
+
+                task_data = get_spike_rates(data)
+
+            st.write("")
+
+            st.write(task_data)
+
+            date = task_data['Date'].iloc[0]
+            file_name = f'{date}_data'
+
+            st.write("")
+
+            st.download_button(
+                label="Download Data",
+                data=task_data.to_csv(index=False).encode('utf-8'),
+                file_name=f'{file_name}.csv',
+                mime='text/csv',
+            )
 
 
 if __name__ == '__main__':
