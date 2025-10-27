@@ -40,8 +40,8 @@ def get_spike_rates(data):
     eps = 1e-12
     if not np.isfinite(sigma) or sigma < eps:
         sigma = eps
-    z_spike_rates = (spike_rates - mu) / sigma
-    
-    task_data[f'unit_{unit}_z_rates'] = z_spike_rates.tolist()
+    z_scores = (spike_rates - mu) / sigma
+
+    task_data[f'unit_{unit}_z_scores'] = z_scores.tolist()
 
     return task_data
