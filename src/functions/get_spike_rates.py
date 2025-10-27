@@ -33,15 +33,15 @@ def get_spike_rates(data):
         spike_rate = spikes_in_window / window_duration
         response_rates.append(spike_rate)
 
-    baseline_subtracted_spike_rates = np.array(response_rates) - np.array(baseline_rates)
-    mean = np.mean(baseline_subtracted_spike_rates)
-    std = np.std(baseline_subtracted_spike_rates)
+    spike_rates = np.array(response_rates) - np.array(baseline_rates)
 
-    if std == 0:
-        normalized_spike_rates = [0] * len(baseline_subtracted_spike_rates)
-    else:
-        normalized_spike_rates = (baseline_subtracted_spike_rates - mean) / std
-
-    task_data[f'unit_{unit}_rates'] = normalized_spike_rates.tolist()
+    mu = float(np.mean(spike_rates))
+    sigma = float(np.std(spike_rates, ddof=1))
+    eps = 1e-12
+    if not np.isfinite(sigma) or sigma < eps:
+        sigma = eps
+    z_spike_rates = (spike_rates - mu) / sigma
+    
+    task_data[f'unit_{unit}_z_rates'] = z_spike_rates.tolist()
 
     return task_data
